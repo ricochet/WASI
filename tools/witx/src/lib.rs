@@ -65,9 +65,9 @@ pub struct Location {
 pub enum WitxError {
     #[error("IO error with file {0:?}")]
     Io(PathBuf, #[source] ::std::io::Error),
-    #[error("Parse error")]
+    #[error("Parse error: {0}")]
     Parse(#[from] wast::Error),
-    #[error("Validation error")]
+    #[error("Validation error: {0}")]
     Validation(#[from] ValidationError),
 }
 
