@@ -1,0 +1,43 @@
+name: WASI release
+
+on:
+  workflow_dispatch:
+    inputs:
+      wasi_version:
+        description: 'WASI version'
+        required: true
+        default: '0.2.5'
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+      - name: Install cargo-binstall
+        uses: cargo-bins/cargo-binstall@v1.10.15
+      - name: Install wit-bindgen
+        shell: bash
+        run: cargo binstall wit-bindgen-cli
+      - name: Install wit-deps
+        shell: bash
+        run: cargo binstall wit-deps-cli
+
+      - name: Run WASI deps script
+        run: ./scripts/wasi-deps.sh "${{ github.event.inputs.wasi_version }}"
+
+      - name: Create feature branch
+        env:
+          FEATURE_BRANCH: release-v${{ inputs.wasi_version }}
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add .
+          git checkout -b $FEATURE_BRANCH
+          git push -u origin $FEATURE_BRANCH
+          git commit -m "Update to v${{ inputs.wasi_version }}"
+          git push
+      - name: Create pull request
+        run: gh pr create -B main -H release-v${{ inputs.wasi_version }} --title 'Release v${{ inputs.wasi_version }}' --body 'Updates the package version to v${{ inputs.wasi_version }}. Thanks!'
+        env:
+            GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
