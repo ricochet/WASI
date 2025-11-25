@@ -1,0 +1,49 @@
+name: 'Validate WIT'
+description: 'Validates WIT files using wit-deps and wit-abi-up-to-date'
+
+inputs:
+  wit-path:
+    description: 'Path to the WIT directory'
+    required: true
+  worlds:
+    description: 'Space-separated list of worlds to validate'
+    required: true
+  wit-deps-version:
+    description: 'Version of wit-deps to use'
+    required: false
+    default: 'v0.5.0'
+
+runs:
+  using: 'composite'
+  steps:
+    - name: Cache wit-deps
+      id: cache-wit-deps
+      uses: actions/cache@5a3ec84eff668545956fd18022155c47e93e2684 # v4.2.3
+      with:
+        path: ~/.local/bin/wit-deps
+        key: wit-deps-${{ inputs.wit-deps-version }}
+
+    - name: Install wit-deps
+      if: steps.cache-wit-deps.outputs.cache-hit != 'true'
+      shell: bash
+      run: |
+        mkdir -p ~/.local/bin
+        curl -Lo ~/.local/bin/wit-deps "https://github.com/bytecodealliance/wit-deps/releases/download/${{ inputs.wit-deps-version }}/wit-deps-x86_64-unknown-linux-musl"
+        chmod +x ~/.local/bin/wit-deps
+
+    - name: Check for deps.toml and validate deps
+      shell: bash
+      run: |
+        if [ -f "${{ inputs.wit-path }}/deps.toml" ]; then
+          echo "Found deps.toml, validating dependencies..."
+          ~/.local/bin/wit-deps -C "${{ inputs.wit-path }}" lock --check
+        else
+          echo "No deps.toml found, skipping dependency check"
+        fi
+
+    - name: Validate WIT ABI
+      uses: WebAssembly/wit-abi-up-to-date@v25
+      with:
+        wit: ${{ inputs.wit-path }}
+        worlds: ${{ inputs.worlds }}
+        all-features: 'true'
