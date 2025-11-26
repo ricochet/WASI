@@ -79,11 +79,18 @@ for (const { proposal, version, worlds } of toValidate) {
     }
   }
 
+
+
   // Validate WIT syntax for each world
   for (const world of worlds) {
     console.log(`  Validating world: ${world}`);
-    if (!run(`wasm-tools component wit "${witDir}" --world "${world}"`)) {
+    if (!run(`wasm-tools component wit "${witDir}"`)) {
       console.log(`::error::WIT validation failed for ${proposal} v${version} world ${world}`);
+      failed = true;
+    }
+
+    if (!run(`wasm-tools component wit "${witDir}/${world}.wit" --wasm -o /dev/null`)) { {
+      console.log(`::error::WASM encoding failed for ${proposal} v${version} world ${world}`);
       failed = true;
     }
   }
