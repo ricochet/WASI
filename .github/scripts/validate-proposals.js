@@ -81,7 +81,7 @@ for (const { proposal, version } of toValidate) {
 
     // Validate WIT syntax
     console.log('  Validating WIT...');
-    if (!run(`wasm-tools component wit "${witDir}"`)) {
+    if (!run(`wasm-tools component wit "${witDir}" -o /dev/null`)) {
       console.log(`::error::WIT validation failed for ${proposal} v${version}`);
       failed = true;
     }
