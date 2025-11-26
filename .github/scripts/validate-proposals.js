@@ -3,8 +3,6 @@
 const { execSync } = require('child_process');
 const fs = require('fs');
 
-const config = require('../proposals.json');
-
 const witPath = (proposal, version) => {
   if (version === '0.2') return `proposals/${proposal}/wit`;
   if (version === '0.3') return `proposals/${proposal}/wit-0.3.0-draft`;
@@ -54,12 +52,7 @@ const filesByVersion = [
 
 for (const [filesJson, version] of filesByVersion) {
   for (const proposal of extractProposals(parseFiles(filesJson))) {
-    const entry = config[proposal]?.[version];
-    if (entry) {
-      toValidate.push({ proposal, version, worlds: entry.worlds });
-    } else {
-      console.log(`::warning::No config for ${proposal} v${version}, skipping`);
-    }
+    toValidate.push({ proposal, version });
   }
 }
 
@@ -70,38 +63,44 @@ if (toValidate.length === 0) {
 
 let failed = false;
 
-for (const { proposal, version, worlds } of toValidate) {
+for (const { proposal, version } of toValidate) {
   const witDir = witPath(proposal, version);
   console.log(`::group::Validating ${proposal} v${version}`);
-  console.log(`  Path: ${witDir}`);
-  console.log(`  Worlds: ${worlds.join(' ')}`);
 
-  // Check wit-deps lock if deps.toml exists
-  if (fs.existsSync(`${witDir}/deps.toml`)) {
-    console.log('  Checking dependencies...');
-    if (!run(`wit-deps -m "${witDir}"/deps.toml -l "${witDir}"/deps.lock -d "${witDir}"/deps lock --check`)) {
-      console.log(`::error::wit-deps lock check failed for ${proposal} v${version}`);
-      failed = true;
+  try {
+    console.log(`  Path: ${witDir}`);
+
+    // Check wit-deps lock if deps.toml exists
+    if (fs.existsSync(`${witDir}/deps.toml`)) {
+      console.log('  Checking dependencies...');
+      if (!run(`wit-deps -m "${witDir}"/deps.toml -l "${witDir}"/deps.lock -d "${witDir}"/deps lock --check`)) {
+        console.log(`::error::wit-deps lock check failed for ${proposal} v${version}`);
+        failed = true;
+      }
     }
-  }
 
-
-
-  // Validate WIT syntax for each world
-  for (const world of worlds) {
-    console.log(`  Validating world: ${world}`);
+    // Validate WIT syntax
+    console.log('  Validating WIT...');
     if (!run(`wasm-tools component wit "${witDir}"`)) {
-      console.log(`::error::WIT validation failed for ${proposal} v${version} world ${world}`);
+      console.log(`::error::WIT validation failed for ${proposal} v${version}`);
       failed = true;
     }
 
+    // Validate WASM encoding
+    console.log('  Validating WASM encoding...');
     if (!run(`wasm-tools component wit "${witDir}" --wasm -o /dev/null`)) {
-      console.log(`::error::WASM encoding failed for ${proposal} v${version} world ${world}`);
+      console.log(`::error::WASM encoding failed for ${proposal} v${version}`);
       failed = true;
     }
+  } finally {
+    console.log('::endgroup::');
   }
-
-  console.log('::endgroup::');
 }
 
-process.exit(failed ? 1 : 0);
+if (failed) {
+  console.log('\n❌ Validation failed');
+  process.exit(1);
+} else {
+  console.log('\n✅ All proposals validated successfully');
+  process.exit(0);
+}
