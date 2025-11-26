@@ -73,7 +73,7 @@ for (const { proposal, version, worlds } of toValidate) {
   // Check wit-deps lock if deps.toml exists
   if (fs.existsSync(`${witDir}/deps.toml`)) {
     console.log('  Checking dependencies...');
-    if (!run(`wit-deps -C "${witDir}" lock --check`)) {
+    if (!run(`wit-deps -m "${witDir}"/deps.toml -l "${witDir}"/deps.lock -d "${witDir}"/deps lock --check`)) {
       console.log(`::error::wit-deps lock check failed for ${proposal} v${version}`);
       failed = true;
     }
