@@ -33,4 +33,6 @@ world imports {
   import terminal-stdout;
   @since(version = 0.2.0)
   import terminal-stderr;
+
+  import test;
 }
