@@ -95,7 +95,7 @@ for (const { proposal, version, worlds } of toValidate) {
       failed = true;
     }
 
-    if (!run(`wasm-tools component wit "${witDir}/${world}.wit" --wasm -o /dev/null`)) {
+    if (!run(`wasm-tools component wit "${witDir}" --wasm -o /dev/null`)) {
       console.log(`::error::WASM encoding failed for ${proposal} v${version} world ${world}`);
       failed = true;
     }
