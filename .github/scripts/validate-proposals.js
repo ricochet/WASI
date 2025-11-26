@@ -32,9 +32,15 @@ const extractProposals = (files) => {
 const run = (cmd) => {
   console.log(`  $ ${cmd}`);
   try {
-    execSync(cmd, { stdio: 'inherit' });
+    const output = execSync(cmd, { encoding: 'utf-8', stdio: ['pipe', 'pipe', 'pipe'] });
+    if (output.trim()) {
+      console.log(output);
+    }
     return true;
-  } catch {
+  } catch (err) {
+    if (err.stdout) console.log(err.stdout);
+    if (err.stderr) console.error(err.stderr);
+    console.error(`  Exit code: ${err.status}`);
     return false;
   }
 };
